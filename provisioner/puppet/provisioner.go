@@ -100,25 +100,21 @@ func (p *Provisioner) Prepare(raws ...interface{}) error {
 }
 
 func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
-	var err error
 	Ui = ui
 
-	err = CreateRemoteDirectory(RemoteStagingPath, comm)
-	if err != nil {
+	if err := CreateRemoteDirectory(RemoteStagingPath, comm); err != nil {
 		return fmt.Errorf("Error creating remote staging directory: %s", err)
 	}
 
 	// Upload all modules
 	ui.Say(fmt.Sprintf("Copying module path: %s", p.config.ModulePath))
-	err = UploadLocalDirectory(p.config.ModulePath, comm)
-	if err != nil {
+	if err := UploadLocalDirectory(p.config.ModulePath, comm); err != nil {
 		return fmt.Errorf("Error uploading modules: %s", err)
 	}
 
 	// Upload manifests
 	ui.Say(fmt.Sprintf("Copying manifests: %s", p.config.ManifestPath))
-	err = UploadLocalDirectory(p.config.ManifestPath, comm)
-	if err != nil {
+	if err := UploadLocalDirectory(p.config.ManifestPath, comm); err != nil {
 		return fmt.Errorf("Error uploading manifests: %s", err)
 	}
 
@@ -133,8 +129,7 @@ func (p *Provisioner) Provision(ui packer.Ui, comm packer.Communicator) error {
 	t := template.Must(template.New("puppet-run").Parse("{{if .Sudo}}sudo {{end}}puppet apply --verbose --modulepath={{.Modulepath}} {{.Manifest}}"))
 	t.Execute(&command, &ExecuteManifestTemplate{!p.config.PreventSudo, modulepath, manifest})
 
-	err = executeCommand(command.String(), comm)
-	if err != nil {
+	if err := executeCommand(command.String(), comm); err != nil {
 		return fmt.Errorf("Error running Puppet: %s", err)
 	}
 
@@ -163,8 +158,7 @@ func UploadLocalDirectory(localDir string, comm packer.Communicator) (err error)
 				return fmt.Errorf("Error opening file: %s", err)
 			}
 
-			err = comm.Upload(remotePath, file)
-			if err != nil {
+			if err := comm.Upload(remotePath, file); err != nil {
 				return fmt.Errorf("Error uploading file: %s", err)
 			}
 		}
@@ -172,8 +166,7 @@ func UploadLocalDirectory(localDir string, comm packer.Communicator) (err error)
 	}
 
 	log.Printf("Uploading directory %s", localDir)
-	err = filepath.Walk(localDir, visitPath)
-	if err != nil {
+	if err := filepath.Walk(localDir, visitPath); err != nil {
 		return fmt.Errorf("Error uploading modules %s: %s", localDir, err)
 	}
 
@@ -213,8 +206,7 @@ func executeCommand(command string, comm packer.Communicator) (err error) {
 	cmd.Stderr = stderr_w
 
 	log.Printf("Executing command: %s", cmd.Command)
-	err = comm.Start(&cmd)
-	if err != nil {
+	if err := comm.Start(&cmd); err != nil {
 		return fmt.Errorf("Failed executing command: %s", err)
 	}
 
